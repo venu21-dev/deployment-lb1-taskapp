@@ -1,0 +1,12 @@
+# Abhängigkeiten
+node_modules/
+
+# Geheime Konfiguration
+.env
+
+# Logs
+npm-debug.log
+*.log
+
+# Test-Abdeckungsberichte
+coverage/

@@ -1,0 +1,8 @@
+# Nicht ins Docker-Image kopieren
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+README.md
+tests

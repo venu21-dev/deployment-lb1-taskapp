@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Notes App</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>Task Notes App</h1>
+    <p id="health-status">Verbinde mit Server…</p>
+  </header>
+
+  <main>
+
+    <!-- Neuen Task erstellen -->
+    <section class="card">
+      <h2>Neuen Task erstellen</h2>
+      <form id="task-form">
+        <input
+          type="text"
+          id="title"
+          placeholder="Titel"
+          required
+        />
+        <input
+          type="text"
+          id="description"
+          placeholder="Beschreibung (optional)"
+        />
+        <button type="submit">Hinzufügen</button>
+      </form>
+    </section>
+
+    <!-- Suche -->
+    <section class="card">
+      <h2>Suche</h2>
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="Tasks suchen…" />
+        <button id="search-btn">Suchen</button>
+        <button id="reset-btn">Alle anzeigen</button>
+      </div>
+    </section>
+
+    <!-- Task-Liste -->
+    <section class="card">
+      <h2>Tasks</h2>
+      <ul id="task-list">
+        <li class="loading">Lade Tasks…</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
