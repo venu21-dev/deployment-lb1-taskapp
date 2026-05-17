@@ -6,14 +6,20 @@
 const { Pool } = require('pg');
 const logger = require('./logger');
 
-// Pool wird einmalig erstellt und wiederverwendet
-const pool = new Pool({
-  host:     process.env.DB_HOST,
-  port:     parseInt(process.env.DB_PORT || '5432', 10),
-  user:     process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+// DATABASE_URL hat Vorrang (Render Cloud).
+// Ohne DATABASE_URL werden die einzelnen DB_* Variablen genutzt (C1 Docker Compose lokal).
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },  // Render PostgreSQL erfordert SSL
+    })
+  : new Pool({
+      host:     process.env.DB_HOST,
+      port:     parseInt(process.env.DB_PORT || '5432', 10),
+      user:     process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+    });
 
 /**
  * Erstellt die Tabelle, falls sie noch nicht existiert.

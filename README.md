@@ -365,12 +365,159 @@ Docker Compose bleibt vollständig erhalten und wird durch C2 nicht verändert. 
 
 ---
 
-## Nächste Schritte (Challenges)
+---
+
+## C3 – Cloud Deployment auf Render
+
+### Was C3 umsetzt
+
+Die App läuft auf der Cloud-Plattform **Render** mit einer öffentlichen HTTPS-URL. Das Express-Backend stellt die REST-API bereit und liefert das Frontend aus. Die Daten werden in einer verwalteten Render-PostgreSQL-Datenbank gespeichert und überleben Neustarts und Redeploys.
+
+### Warum Render?
+
+Render unterstützt Node.js Web Services, GitHub-basierte Auto-Deployments, Umgebungsvariablen, öffentliche HTTPS-URLs, verwaltetes PostgreSQL und ein Log-Dashboard — alles was dieses Projekt braucht, kostenlos nutzbar.
+
+### Cloud-Architektur
+
+```mermaid
+graph LR
+    Browser["Browser (Internet)"]
+
+    subgraph render["Render Cloud"]
+        WebService["Web Service\nNode.js/Express\n(Backend + Frontend)"]
+        Postgres["PostgreSQL\n(Managed Database)"]
+    end
+
+    Browser -->|"HTTPS"| WebService
+    WebService -->|"DATABASE_URL"| Postgres
+```
+
+Für C3 liefert das Express-Backend das Frontend direkt aus dem `public/`-Ordner aus — kein separater Nginx-Container nötig. Der C1 Docker Compose Setup (mit Nginx) bleibt unverändert für den lokalen Betrieb.
+
+### Öffentliche URL
+
+```
+https://YOUR-RENDER-APP-URL.onrender.com
+```
+
+### Render Services einrichten
+
+#### Schritt 1 – PostgreSQL Datenbank erstellen
+
+1. Render Dashboard → **New → PostgreSQL**
+2. Name vergeben (z.B. `taskapp-db`)
+3. Region wählen (z.B. Frankfurt)
+4. Plan: **Free**
+5. **Create Database** klicken
+6. Nach dem Start: **Internal Database URL** kopieren (wird in Schritt 2 benötigt)
+
+#### Schritt 2 – Web Service erstellen
+
+1. Render Dashboard → **New → Web Service**
+2. GitHub Repository verbinden: `deployment-lb1-taskapp`
+3. Einstellungen:
+
+| Feld | Wert |
+|---|---|
+| **Name** | `taskapp` (oder beliebig) |
+| **Region** | gleiche wie die Datenbank |
+| **Branch** | `main` |
+| **Root Directory** | *(leer lassen)* |
+| **Build Command** | `cd backend && npm ci` |
+| **Start Command** | `cd backend && npm start` |
+| **Plan** | Free |
+
+#### Schritt 3 – Umgebungsvariablen setzen
+
+Im Web Service → **Environment** folgende Variablen eintragen:
+
+| Variable | Wert |
+|---|---|
+| `APP_NAME` | `Task Notes App` |
+| `APP_VERSION` | `1.0.0` |
+| `DATABASE_URL` | Internal Database URL aus Schritt 1 |
+
+> `PORT` wird von Render automatisch gesetzt — nicht manuell eintragen.
+> Keine Passwörter oder Secrets im Repository — alle Werte werden nur im Render Dashboard gespeichert.
+
+#### Schritt 4 – Deployment starten
+
+**Save** klicken → Render startet automatisch den ersten Deploy.
+Logs sind live im **Logs**-Tab sichtbar.
+
+#### Schritt 5 – App öffnen
+
+Nach erfolgreichem Deploy: **URL** oben im Dashboard klicken.
+
+### Wie DATABASE_URL funktioniert
+
+Render stellt bei einer verbundenen PostgreSQL-Datenbank automatisch eine `DATABASE_URL` bereit. Der Code erkennt diese Variable und nutzt sie bevorzugt:
+
+```js
+// db.js – DATABASE_URL hat Vorrang (Render), sonst DB_* Variablen (C1 lokal)
+const pool = process.env.DATABASE_URL
+  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  : new Pool({ host: process.env.DB_HOST, ... });
+```
+
+### Persistente Datenspeicherung
+
+Render PostgreSQL ist eine verwaltete Datenbank. Tasks bleiben erhalten auch wenn der Web Service neu gestartet oder neu deployed wird. Nur ein manuelles Löschen der Datenbank entfernt die Daten.
+
+### Logs anzeigen
+
+Das Backend schreibt strukturierte JSON-Logs auf stdout:
+```json
+{"timestamp":"2026-05-17T10:00:00.000Z","level":"info","message":"Server gestartet","port":3000}
+```
+
+Logs anzeigen: Render Dashboard → Web Service → **Logs** Tab.
+
+### Auto-Deploy
+
+Das GitHub Repository ist mit Render verbunden. Jeder Push auf `main` löst automatisch einen neuen Deploy aus. Kein manueller Schritt nötig.
+
+### Deployment verifizieren
+
+```
+# Gesundheitscheck
+https://YOUR-RENDER-APP-URL.onrender.com/api/health
+
+# App-Status (zeigt Hostname und Version)
+https://YOUR-RENDER-APP-URL.onrender.com/api/status
+
+# Frontend
+https://YOUR-RENDER-APP-URL.onrender.com
+```
+
+1. Task erstellen
+2. Web Service in Render neu starten (Dashboard → Manual Deploy oder Restart)
+3. Prüfen ob Task noch vorhanden ist → Persistenz bestätigt
+
+### Hinweis zu C1 und C2
+
+- **C1** Docker Compose läuft weiterhin lokal mit `docker compose up --build`
+- **C2** GitHub Actions Pipeline publiziert weiterhin das Backend-Image in GHCR
+- C3 ergänzt beide — nichts wird entfernt oder gebrochen
+
+### C3-Checkliste
+
+- [ ] Öffentliche HTTPS-URL erreichbar
+- [ ] Render als Plattform genannt und begründet
+- [ ] Umgebungsvariablen im Render Dashboard gesetzt
+- [ ] Keine Secrets im Repository
+- [ ] Render PostgreSQL Datenbank verbunden (`DATABASE_URL`)
+- [ ] Daten überleben Neustart/Redeploy
+- [ ] Deployment via GitHub Auto-Deploy reproduzierbar
+- [ ] Strukturierte JSON-Logs im Render Log-Tab sichtbar
+- [ ] README aktualisiert
+
+---
+
+## Übersicht Challenges
 
 | Challenge | Inhalt                                      | Status        |
 |-----------|---------------------------------------------|---------------|
 | **C1**    | Docker Compose (App + Datenbank zusammen)   | ✅ Implementiert |
 | **C2**    | GitHub Actions CI/CD Pipeline               | ✅ Implementiert |
-| **C3**    | Cloud-Deployment                            | Noch nicht implementiert |
-
-Jede Challenge wird Schritt für Schritt auf dieser Basis aufgebaut.
+| **C3**    | Cloud-Deployment auf Render                 | ✅ Implementiert |
