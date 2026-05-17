@@ -31,7 +31,7 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/info', (_req, res) => {
   res.json({
     name:  'Venurshan Manivannan',
-    class: 'YOUR_CLASS_PLACEHOLDER',
+    class: 'HF2024A',
     hobby: 'Gaming',
   });
 });
