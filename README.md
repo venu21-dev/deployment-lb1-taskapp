@@ -397,7 +397,7 @@ Für C3 liefert das Express-Backend das Frontend direkt aus dem `public/`-Ordner
 ### Öffentliche URL
 
 ```
-https://YOUR-RENDER-APP-URL.onrender.com
+https://deployment-lb1-taskapp.onrender.com
 ```
 
 ### Render Services einrichten
@@ -481,13 +481,13 @@ Das GitHub Repository ist mit Render verbunden. Jeder Push auf `main` löst auto
 
 ```
 # Gesundheitscheck
-https://YOUR-RENDER-APP-URL.onrender.com/api/health
+https://deployment-lb1-taskapp.onrender.com/api/health
 
 # App-Status (zeigt Hostname und Version)
-https://YOUR-RENDER-APP-URL.onrender.com/api/status
+https://deployment-lb1-taskapp.onrender.com/api/status
 
 # Frontend
-https://YOUR-RENDER-APP-URL.onrender.com
+https://deployment-lb1-taskapp.onrender.com
 ```
 
 1. Task erstellen
