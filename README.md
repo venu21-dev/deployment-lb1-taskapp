@@ -259,12 +259,118 @@ Nginx leitet alle Anfragen an `/api/*` automatisch an `http://backend:3000` weit
 
 ---
 
+---
+
+## C2 – CI/CD mit GitHub Actions
+
+### Was C2 umsetzt
+
+Bei jedem Push auf `main` läuft automatisch eine Pipeline die:
+1. Tests ausführt
+2. Ein Docker Image baut
+3. Das Image in GitHub Container Registry (GHCR) publiziert
+
+### Workflow-Datei
+
+`.github/workflows/ci-cd.yml`
+
+### Auslöser
+
+| Trigger | Beschreibung |
+|---|---|
+| Push auf `main` | Automatisch bei jedem Commit |
+| `workflow_dispatch` | Manuell über GitHub Actions UI |
+
+### Pipeline-Stages
+
+```
+Push auf main
+     │
+     ▼
+┌─────────┐     fehlgeschlagen → Pipeline stoppt
+│  Test   │ ──────────────────────────────────►  ✗
+└─────────┘
+     │ erfolgreich
+     ▼
+┌──────────────────┐
+│  Build & Push    │  → Image in GHCR
+└──────────────────┘
+```
+
+| Job | Was passiert |
+|---|---|
+| `test` | Node.js 24 einrichten, `npm ci`, `npm test` |
+| `build-and-push` | Docker Buildx, Login GHCR, Image bauen, pushen |
+
+### Image in GHCR
+
+```
+ghcr.io/<owner>/<repo>-backend:latest
+ghcr.io/<owner>/<repo>-backend:<git-sha>
+```
+
+- `latest` → immer der neueste Stand von `main`
+- `<git-sha>` → eindeutig, auf jeden Commit zurückverfolgbar
+
+### Authentifizierung
+
+Der eingebaute `GITHUB_TOKEN` wird verwendet. Es müssen **keine Passwörter oder Secrets manuell gesetzt werden**. Die Berechtigungen sind direkt im Workflow definiert:
+
+```yaml
+permissions:
+  contents: read
+  packages: write
+```
+
+### Caching
+
+| Cache | Zweck |
+|---|---|
+| npm Cache (`cache-dependency-path`) | `node_modules` werden gecacht, `npm ci` läuft schneller |
+| Docker Layer Cache (`type=gha`) | Unveränderte Image-Schichten werden wiederverwendet |
+
+### Warum GitHub Actions?
+
+- Direkt in GitHub integriert, kein externes Tool nötig
+- `GITHUB_TOKEN` ist automatisch vorhanden
+- GHCR ist kostenlos für öffentliche Repos
+
+### Warum GHCR?
+
+- Gleiche Plattform wie der Code (GitHub)
+- Kein separates Konto bei Docker Hub nötig
+- Kostenfrei für öffentliche Repositories
+
+### Warum nur das Backend-Image?
+
+Das Frontend (Nginx + statische Dateien) ändert sich selten. PostgreSQL ist ein offizielles Image. Nur das Backend enthält eigene Anwendungslogik → nur das Backend-Image wird publiziert. Das hält die Pipeline einfach.
+
+### Pipeline reproduzieren
+
+```bash
+# 1. Code auf main pushen (oder manuell starten)
+git push origin main
+
+# 2. GitHub → Actions Tab → laufende Pipeline beobachten
+
+# 3. GitHub → Packages → Image prüfen
+
+# 4. Image lokal pullen
+docker pull ghcr.io/<owner>/<repo>-backend:latest
+```
+
+### Hinweis zu C1
+
+Docker Compose bleibt vollständig erhalten und wird durch C2 nicht verändert. C1 (`docker compose up --build`) funktioniert weiterhin für den lokalen Betrieb.
+
+---
+
 ## Nächste Schritte (Challenges)
 
 | Challenge | Inhalt                                      | Status        |
 |-----------|---------------------------------------------|---------------|
 | **C1**    | Docker Compose (App + Datenbank zusammen)   | ✅ Implementiert |
-| **C2**    | GitHub Actions CI/CD Pipeline               | Noch nicht implementiert |
+| **C2**    | GitHub Actions CI/CD Pipeline               | ✅ Implementiert |
 | **C3**    | Cloud-Deployment                            | Noch nicht implementiert |
 
 Jede Challenge wird Schritt für Schritt auf dieser Basis aufgebaut.
