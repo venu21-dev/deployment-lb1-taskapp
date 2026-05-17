@@ -48,5 +48,3 @@ deployment-lb1-taskapp/
 ├── .env.example
 ├── .gitignore
 └── README.md
-
-C2 pipeline demo
